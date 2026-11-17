@@ -57,6 +57,7 @@ export type Relation =
   | 'reads'
   | 'writes'
   | 'creates' // migration → view/table, class → table ("crée")
+  | 'drops' // migration → table it drops (05 §3.5 « Tables supprimées »)
   | 'calls' // code → external system / code → code ("appelle")
   | 'exposes' // REST resource / servlet → endpoint
   | 'applies-to' // servlet filter → URL pattern

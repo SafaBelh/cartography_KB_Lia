@@ -4,7 +4,7 @@ Carte interactive, **100 % locale et hors-ligne**, de l’application **LiaWeb**
 
 C’est une adaptation de `Team_Faouzia/project-1-cartography` (projet Talend). L’interface, les performances du canevas, la physique de glisser et les exports sont identiques. L’extracteur et les vues sont réécrits pour LiaWeb.
 
-Source : les 13 documents de `LiaWeb/LIAWEB_knowledge_base/docs/project-knowledge/` (base de connaissances du 12/11/2026 : version 8.4.0, migrations 8.5.0 en cours). Ces documents ne sont jamais modifiés.
+Source : les 13 documents de `LiaWeb/LIAWEB_knowledge_base/docs/project-knowledge/` (base de connaissances du 12/11/2026 : version 8.4.0, migrations 8.5.0 en cours). Pour le document 05, c’est **`05-database-documentation-new.md`** qui est lu (régénéré depuis le code source le 17/11/2026, version 8.5.0, avec l’inventaire complet des tables) ; l’ancien `05-database-documentation.md` est ignoré. Le choix est fait par `docFiles` dans `cartography.config.json` : si deux fichiers portent le même numéro sans choix explicite, l’extraction s’arrête. Ces documents ne sont jamais modifiés.
 
 ---
 
@@ -33,7 +33,8 @@ Le dépôt SVN de LiaWeb n’est pas disponible. La carte est construite **uniqu
 
 Conséquences :
 
-- Seuls les éléments **nommés dans la doc** apparaissent. Exemples : 95 tables sur les 351 déclarées (05:81), 66 pages sur ≈ 250 montées (02:61), 6 migrations sur 289 (05:154). Ces comptes sont des contrôles « n/a » de l’Atlas.
+- Seuls les éléments **nommés dans la doc** apparaissent. Exemples : 66 pages sur ≈ 250 montées (02:61), 29 migrations sur 289 (05:861). Ces comptes sont des contrôles « n/a » de l’Atlas.
+- Exception : la base de données. Le 05 régénéré liste **toutes** les tables (05 §3.5) et toutes les vues (05 §3.3). Les comptes « 351 tables en place », « 17 vues » et « 24 tables supprimées » sont donc des contrôles stricts (réussi / échoué).
 - Un **[V]** est l’affirmation de la doc (« vérifié dans le code »), pas une vérification faite par cet outil.
 - Une ligne de doc sans tag est traitée comme **[H]**. C’est volontairement prudent.
 
@@ -44,7 +45,7 @@ Conséquences :
 | Paquets Java (`com.ordiges`, `com.wtrace`, `fr.tracesolutions`) | Noms qualifiés, chemins `src/…`, noms courts dans une colonne « Paquet(s) » avec le préfixe que la doc donne (en-tête « `com.ordiges.` », titre « `com.ordiges` », « Sauf mention contraire… sous `src/com/ordiges/` ») |
 | Pages Wicket, services, classes | `*Page`, `*Service`, FQCN, `Classe.méthode()`, `src/…/X.java:45-60`, chemins élidés `lia-core/.../x/Y.java`. Un nom CamelCase seul n’est retenu que s’il a un suffixe de convention (09 §2), s’il est dans une colonne « Classe / Entité / Composant / Ressource », ou s’il est cité ailleurs avec un chemin |
 | Objets du moteur LIA (`fprj`, `fcns`…) | 11 §1, puis mentions |
-| Tables et vues | Préfixes **lus dans 05 §3.1** ; un autre `X_Y` seulement si la doc écrit « table » juste avant ; `A/B` et `_*` développés ; jamais dans une colonne « Clé / Colonnes » |
+| Tables et vues | Inventaire de 05 §3.5 et tableau de rattachement des vues de 05 §3.3 (règle `table-inventory`, voir ci-dessous). Ailleurs : préfixes **lus dans 05 §3.1** ; un autre `X_Y` seulement si la doc écrit « table » juste avant ; `A/B` et `_*` développés ; jamais dans une colonne « Clé / Colonnes » |
 | Migrations | `dbu<date>/`, `dbu<numver>.sql`, `maj99/`, `init/`, `UpgradeTask_*` (05 §4) |
 | Points d’entrée, API REST | Chemins `/app/*`, `/rest/*`… ; tableau 06 §5.2 (ressource → chemin, préfixe lu en 06:128) |
 | Configuration | `-D…` et noms écrits après « préférence / paramètre / clé ». **Noms seulement, jamais de valeur** |
@@ -70,6 +71,9 @@ Un nœud ou une arête prend la confiance la plus forte de ses citations.
 | `same-clause` | Même proposition. Le verbe donne la relation : « `LiaRealm` lit `VUE_AUTENTIF` » → `reads` ; « `InitSchedulerJob` planifie `AlerteJob` » → `calls` ; « `DatabaseUpdater`, appelé depuis `ContextListener` » → appel inversé. Sans verbe → `uses`. Une phrase niée (« n’est pas couvert par ») ne crée rien |
 | `table-row` | Ligne de tableau : paquet ↔ plateforme (06 §2) → `calls` ; filtre ↔ portée (02 §3) → `applies-to` |
 | `entity-table`, `object-table`, `rest-table` | Tableaux 05 §3.2, 11 §1, 06 §5.2 |
+| `table-inventory` | Une ligne de 05 §3.5 (« Entité JPA \| Table \| Objet moteur LIA \| Créée par ») ou de 05 §3.3 (« Vue \| Entité JPA \| Objet moteur LIA ») : entité `maps-to` table, chaque objet `maps-to` table, script `creates` table |
+| `table-inventory:dropped` | « Tables supprimées par une migration » : table au statut « supprimée », script `drops` table, objet qui la cite encore `maps-to` (libellé « table supprimée ») |
+| `table-inventory:no-script` | « Noms cités sans script de création » : nom au statut « jamais créée », relié à son objet |
 | `lifecycle-arrow` | « `3 en cours` → `onValidateActe` → `5 validé` » donne une transition étiquetée `onValidateActe` |
 | `state-setter:*` | « `ClotureMarchePage` passe l’état à 5 », « acte `RESI_MAR` → état 6 », phrase d’introduction « `MarcheService.putMarcheEtat` : » |
 | `lifecycle-order:inferred` | Ordre des lignes d’un tableau lu comme transition : **toujours [H]** |
@@ -113,7 +117,14 @@ Raccourcis : `g` puis `a` Atlas · `g` Graphe · `m` Modules · `i` Diagrammes �
 | Liens entre tables | Phrase « Chaîne principale » (05:138), cardinalité telle qu’écrite. Un nom ambigu (« Lot » = `flot` ou `flcs`) reste non résolu |
 | Accès | Arêtes `maps-to`, `reads`, `creates`, `uses` du graphe |
 
-État au 12/11/2026 : 95 tables nommées (351 déclarées), 9 vues, 55 colonnes citées sur 25 tables (dont 3 [H]), 25 clés, 0 FK, 9 liens documentés, 15 migrations.
+| Inventaire (05 §3.5) | Pour chaque table en place : domaine (titre de sous-section), entité JPA, objets du moteur, script de création, rattachement (« entité JPA et objet du moteur », « entité JPA seulement », « objet du moteur seulement », « ni entité ni objet »). Filtre par rattachement |
+| Hors schéma | Les 24 tables supprimées (avec le script qui les supprime) et les 6 noms du dictionnaire jamais créés. Ils ne sont pas rattachés à `jdbc/liaweb` |
+
+Les lignes de l’inventaire n’ont pas de tag : elles prennent le [V] de la phrase d’introduction « Relevé du 17/11/2026 … [V] : » (05:201), noté `confidenceFrom: section`. Les noms sans script gardent le [H] de leur ligne.
+
+État au 17/11/2026 : **351 tables en place sur 351** (236 avec entité JPA et objet du moteur, 63 entité seule, 31 objet seul, 21 ni l’un ni l’autre, comme le bilan de 05 §3.5), 17 vues sur 17, 24 tables supprimées, 6 noms sans script, 55 colonnes citées sur 25 tables (dont 3 [H]), 25 clés, 0 FK, 9 liens documentés.
+
+Les diagrammes « Entités et tables » et « Migrations dbupdate » restent lisibles : le premier ne montre que les entités centrales (05 §3.2, 11 §1), le second les tables créées ou supprimées par un script (les ≈ 320 tables de `init/` sont dans la vue Base de données).
 
 ## Modèle de données
 
@@ -136,12 +147,12 @@ npm run extract -- --config autre.config.json --out data
 
 ## Vérifications
 
-- `npm test` : 28 tests.
+- `npm test` : 30 tests.
   - `tests/recognizers.test.ts` : FQCN, `Classe.méthode`, chemins avec lignes, tables selon 05 §3.1, migrations, endpoints, tags annotés et mêlés, tag de section, légende de 10.
-  - `tests/extractor.test.ts` : section « Questions pour l’équipe » sur une fixture synthétique ; cohérence avec la base LiaWeb (modules, questions, entités ↔ tables, cycles de vie, diagramme ASCII, secrets, règle de chaque arête, déductions toujours [H]).
+  - `tests/extractor.test.ts` : section « Questions pour l’équipe » sur une fixture synthétique ; cohérence avec la base LiaWeb (modules, questions, entités ↔ tables, **inventaire de 05 §3.5 : 351 tables, bilan 236/63/31/21, tables supprimées, noms sans script**, cycles de vie, diagramme ASCII, secrets, règle de chaque arête, déductions toujours [H]).
   - `tests/schema.test.ts` : base unique, clés, liaisons, UPDATE, colonnes [H], **liste de codes ou de classes jamais prise pour des colonnes**, aucun FK inventé.
 - Contrôles intégrés (`stats.checks`) : provenance sur chaque nœud, aucune arête orpheline, règle sur chaque arête, chaque ligne citée contient bien l’entité, aucune valeur de secret, comptes déclarés.
-- `npm run check` : 1524/1524 nœuds (hors documents) retrouvés sur leur ligne au 12/11/2026.
+- `npm run check` : 2465/2465 nœuds (hors documents) retrouvés sur leur ligne au 17/11/2026.
 
 ## Arborescence
 

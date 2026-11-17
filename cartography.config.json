@@ -3,8 +3,9 @@
   "projectLabel": "LiaWeb",
   "title": "LiaWeb — progiciel de gestion des marchés publics (Ordiges)",
   "docsDir": "../LIAWEB_knowledge_base/docs/project-knowledge",
+  "docFiles": { "05": "05-database-documentation-new.md" },
   "provenanceRoot": "..",
-  "scopeNote": "Base de connaissances du 12/11/2026 (version 8.4.0, migrations 8.5.0 en cours) — code source SVN non disponible",
+  "scopeNote": "Base de connaissances du 12/11/2026 (version 8.4.0) ; 05 régénéré depuis le code source le 17/11/2026 (inventaire des 351 tables, version 8.5.0) — code source SVN non chargé dans l'outil",
 
   "java": {
     "packageRoots": ["com.wtrace", "com.ordiges", "fr.tracesolutions", "fr.techilia"],
@@ -30,6 +31,7 @@
     "resourcePrefixes": { "file": "12-", "heading": "^Préfixes des ressources" },
     "views": { "file": "05-", "heading": "^3\\.3 Vues" },
     "entities": { "file": "05-", "heading": "^3\\.2 Entités centrales" },
+    "tableInventory": { "file": "05-", "headings": ["^3\\.3 Vues", "^3\\.5 Inventaire complet"], "droppedHeading": "^Tables supprimées", "noScriptHeading": "^Noms cités sans script", "introPattern": "^Relevé du .*\\[V\\]" },
     "schemaChain": { "file": "05-", "pattern": "^Chaîne principale" },
     "columnPrefixes": { "file": "05-", "pattern": "Les colonnes d'une table partagent un préfixe" },
     "singleDatasource": { "file": "05-", "pattern": "^\\| Source de données \\| Une seule" },
@@ -101,9 +103,11 @@
   },
 
   "declared": [
-    { "id": "tables", "label": "Tables du schéma initial", "file": "05-", "pattern": "Schéma initial : (\\d+) tables", "type": "table" },
+    { "id": "tables", "label": "Tables en place (version 8.5.0)", "file": "05-", "pattern": "Schéma actuel : (\\d+) tables en place", "type": "table", "subtype": "table", "complete": true },
+    { "id": "views", "label": "Vues en place (version 8.5.0)", "file": "05-", "pattern": "tables en place et (\\d+) vues", "type": "view", "subtype": "vue", "complete": true },
+    { "id": "dropped", "label": "Tables supprimées par une migration", "file": "05-", "pattern": "^#### Tables supprimées par une migration \\((\\d+)\\)", "type": "table", "subtype": "table supprimée", "complete": true },
     { "id": "entities", "label": "Entités JPA (@Entity)", "file": "05-", "pattern": "\\((\\d+) `@Entity`", "type": "class", "subtype": "entité JPA" },
-    { "id": "objects", "label": "Objets du dictionnaire dd_lia", "file": "05-", "pattern": "\\((\\d+) `<objet>`\\)", "type": "object" },
+    { "id": "objects", "label": "Objets du dictionnaire dd_lia", "file": "05-", "pattern": "\\((\\d+) `<objet>`", "type": "object" },
     { "id": "migrations", "label": "Entrées du manifeste dbupdate.xml", "file": "05-", "pattern": "(\\d+) entrées `<majbase", "type": "migration", "subtype": "script" },
     { "id": "pages", "label": "Pages Wicket montées", "file": "02-", "pattern": "≈ (\\d+) pages montées", "type": "page" },
     { "id": "services", "label": "Services statiques de com.wtrace.wapp.service", "file": "03-", "pattern": "(\\d+) services statiques", "type": "service", "subtype": "com.wtrace.wapp.service" },

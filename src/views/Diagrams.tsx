@@ -69,7 +69,8 @@ function requestDiagram() {
 }
 
 function persistenceDiagram() {
-  const maps = graph.edges.filter((e) => e.relation === 'maps-to');
+  // central entities only (05 §3.2, 11 §1): the full inventory (05 §3.5, ≈ 600 links) is browsed in the Base de données view
+  const maps = graph.edges.filter((e) => e.relation === 'maps-to' && e.provenance.some((p) => p.method === 'entity-table' || p.method === 'object-table'));
   const ents = [...new Set(maps.filter((e) => nodeById.get(e.source)!.type !== 'object').map((e) => e.source))].sort(byLabel);
   const objs = [...new Set(maps.filter((e) => nodeById.get(e.source)!.type === 'object').map((e) => e.source))].sort(byLabel);
   const tbls = [...new Set(maps.map((e) => e.target))].sort(byLabel);
@@ -103,16 +104,20 @@ function migrationDiagram() {
   const root = migs.filter((m) => m.subtype === 'racine' || m.subtype === 'manifeste').map((m) => m.id);
   const folders = migs.filter((m) => /dossier/.test(m.subtype ?? '')).map((m) => m.id).sort(byLabel);
   const scripts = migs.filter((m) => m.subtype === 'script' || m.subtype === 'tâche Java').map((m) => m.id).sort(byLabel);
-  const created = [...new Set(graph.edges.filter((e) => e.relation === 'creates' && nodeById.get(e.source)?.type === 'migration').map((e) => e.target))].sort(byLabel);
-  const ids = new Set([...root, ...folders, ...scripts, ...created, 'cls:DatabaseUpdater'].filter((x) => nodeById.has(x)));
+  // what a script creates or drops (the ≈ 320 tables of the initial schema `init/` are left to the Base de données view)
+  const changed = graph.edges.filter((e) => (e.relation === 'creates' || e.relation === 'drops') && nodeById.get(e.source)?.subtype === 'script');
+  const created = [...new Set(changed.filter((e) => e.relation === 'creates').map((e) => e.target))].sort(byLabel);
+  const dropped = [...new Set(changed.filter((e) => e.relation === 'drops').map((e) => e.target))].sort(byLabel);
+  const ids = new Set([...root, ...folders, ...scripts, ...created, ...dropped, 'cls:DatabaseUpdater'].filter((x) => nodeById.has(x)));
   return {
     columns: [
       { title: 'Démarrage', ids: ['cls:DatabaseUpdater', ...root].filter((x) => nodeById.has(x)) },
       { title: 'Dossiers', ids: folders },
       { title: 'Scripts & tâches', ids: scripts },
-      { title: 'Vues (re)créées', ids: created },
+      { title: 'Tables et vues (re)créées', ids: created },
+      { title: 'Tables supprimées', ids: dropped },
     ],
-    edges: edgesAmong(ids, ['part-of', 'creates']),
+    edges: edgesAmong(ids, ['part-of', 'creates', 'drops']),
   };
 }
 
@@ -146,10 +151,10 @@ function workflowDiagram(wfId: string) {
 const DIAGRAMS = [
   { id: 'module', label: 'Module fonctionnel', icon: Boxes, intro: 'Ce que la section du module (04) cite — paquets, pages, services, classes, tables — et leurs voisins directs dans le graphe (paquets des classes, tables des entités, systèmes appelés).' },
   { id: 'requete', label: 'Chaîne d’une requête', icon: Route, intro: 'Filtres de web.xml dans l’ordre (02 §3), points d’entrée auxquels ils s’appliquent, et classes qui exposent ces URL (servlets, ressources REST de 06 §5.2, pages montées).' },
-  { id: 'persistance', label: 'Entités et tables', icon: Database, intro: 'Correspondance entité JPA → table (05 §3.2) et objet du moteur LIA → table (11 §1, 05 §2.2). Deux chemins de persistance vers la même base.' },
+  { id: 'persistance', label: 'Entités et tables', icon: Database, intro: 'Entités centrales : entité JPA → table (05 §3.2) et objet du moteur LIA → table (11 §1). Deux chemins de persistance vers la même base. Le rattachement des 351 tables (05 §3.5) est dans la vue Base de données.' },
   { id: 'tables', label: 'Liens entre tables', icon: Link2, intro: 'La « Chaîne principale » de 05 : liens de table à table avec la cardinalité écrite. La doc dit qu’ils sont garantis par des clés étrangères mais ne nomme pas les colonnes : aucune colonne n’est reliée.' },
   { id: 'integrations', label: 'Intégrations', icon: Plug, intro: 'Paquets et classes qui appellent un système externe (lignes des tableaux de 06, phrases explicites), systèmes rangés par catégorie.' },
-  { id: 'migrations', label: 'Migrations dbupdate', icon: FolderTree, intro: 'DatabaseUpdater au démarrage, dossiers de version, scripts et tâches Java nommés par la doc, vues recréées par maj99 (05 §3.3, §4).' },
+  { id: 'migrations', label: 'Migrations dbupdate', icon: FolderTree, intro: 'DatabaseUpdater au démarrage, dossiers de version, scripts et tâches Java nommés par la doc ; tables et vues créées par un script, tables supprimées (05 §3.3, §3.5, §4). Les tables du schéma initial (init/) sont dans la vue Base de données.' },
   { id: 'workflow', label: 'Enchaînement', icon: GitMerge, intro: 'Étapes d’un enchaînement de 07 / 02 / 05 dans l’ordre écrit ; sous chaque étape, les classes citées sur sa ligne. Le diagramme de 07 §1 suit ses flèches.' },
 ];
 

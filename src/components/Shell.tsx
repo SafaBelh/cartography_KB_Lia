@@ -165,7 +165,7 @@ function Sidebar() {
           <div className="text-[11px] leading-snug text-muted tnum">
             {stats.nodes} nœuds · {stats.edges} arêtes
             <br />
-            LiaWeb 8.4.0 · docs du 12/11/2026
+            LiaWeb 8.4.0 · docs du 12/11/2026 · 05 du 17/11/2026 (8.5.0)
           </div>
         </div>
         <div className="whitespace-nowrap text-[10.5px] text-muted">100 % local · aucun appel réseau</div>
@@ -363,7 +363,7 @@ function SourceBanner() {
     <div className="flex items-center gap-3 border-b border-line bg-[color-mix(in_oklab,var(--warning)_12%,var(--surface))] px-5 py-2 text-[12.5px] text-fg-2" data-noexport="1">
       <AlertTriangle size={14} className="shrink-0 text-warning" />
       <span className="flex-1">
-        <b className="font-semibold text-fg">Code source non chargé.</b> Le dépôt SVN de LiaWeb n’est pas disponible : la carte est construite à partir des 13 documents de la base de connaissances uniquement (nœuds « doc-only »). Un [V] est une affirmation de la doc, pas une vérification de cet outil.
+        <b className="font-semibold text-fg">Code source non chargé.</b> Le dépôt SVN de LiaWeb n’est pas disponible : la carte est construite à partir des 13 documents de la base de connaissances uniquement (nœuds « doc-only »). Le 05 (base de données) a été régénéré depuis le code le 17/11/2026 : ses 351 tables sont toutes cartographiées. Un [V] est une affirmation de la doc, pas une vérification de cet outil.
       </span>
       <button onClick={s.dismissBanner} className="rounded-md p-1 text-muted hover:bg-surface-3 hover:text-fg" aria-label="Masquer le bandeau">
         <X size={14} />

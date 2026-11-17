@@ -9,7 +9,9 @@
  *  - a column is a primary key only when it sits in the « Clé » column of 05 §3.2;
  *  - « Colonnes de liaison » are shown as such: no foreign key is drawn between columns;
  *  - table-level links come only from the « Chaîne principale » sentence of 05 (cardinality as written);
- *  - columns attached through the prefix convention of 05 §3.1 (`PRJ_PROJET` → `FPRJ_`) are flagged [H].
+ *  - columns attached through the prefix convention of 05 §3.1 (`PRJ_PROJET` → `FPRJ_`) are flagged [H];
+ *  - the inventory of 05 §3.5 gives every table in place (entity, engine objects, creating script: node props
+ *    and maps-to / creates edges); dropped tables and names never created are kept apart (`retired`).
  */
 import type { DocFile, DocsBundle, GEdge, GNode, Graph, Relation } from '../types/graph';
 
@@ -69,9 +71,11 @@ export interface DbSchema {
   engines: GNode[];
   groups: DbGroup[];
   views: DbTable[];
+  /** Tables dropped by a migration, and names of the engine dictionary that no script creates (05 §3.5). */
+  retired: DbTable[];
   links: DbLink[];
   declaredTables?: { count: number; source: DocRef };
-  stats: { tables: number; views: number; tablesWithColumns: number; columns: number; pks: number; fks: 0; links: number; accessEdges: number; inferredColumns: number };
+  stats: { tables: number; views: number; tablesWithColumns: number; columns: number; pks: number; fks: 0; links: number; accessEdges: number; inferredColumns: number; byBinding: Record<string, number> };
 }
 
 const ACCESS: Relation[] = ['reads', 'writes', 'creates', 'maps-to', 'uses'];
@@ -137,7 +141,8 @@ export function buildSchema(graph: Graph, docs: DocsBundle): DbSchema {
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       if (!declaredTables && d.id === '05') {
-        const m = line.match(/Schéma initial\s*:\s*(\d+)\s+tables/);
+        // current schema (regenerated 05: « Schéma actuel : 351 tables en place »), else the initial one
+        const m = line.match(/Schéma actuel\s*:\s*(\d+)\s+tables/) ?? (docs.docs.some((x) => x.id === '05' && /Schéma actuel\s*:/.test(x.markdown)) ? null : line.match(/Schéma initial\s*:\s*(\d+)\s+tables/));
         if (m) declaredTables = { count: Number(m[1]), source: ref(d, i, line) };
       }
       if (/^Chaîne principale/.test(line.replace(/\*\*/g, ''))) chainLines.push({ d, i, line });
@@ -272,7 +277,12 @@ export function buildSchema(graph: Graph, docs: DocsBundle): DbSchema {
 
   const groupMap = new Map<string, DbGroup>();
   const views: DbTable[] = [];
+  const retired: DbTable[] = [];
   for (const tb of tables.values()) {
+    if (tb.node.props.statut !== undefined && tb.node.props.statut !== 'en place') {
+      retired.push(tb);
+      continue;
+    }
     if (tb.node.type === 'view') {
       views.push(tb);
       continue;
@@ -284,16 +294,21 @@ export function buildSchema(graph: Graph, docs: DocsBundle): DbSchema {
   const order = (a: DbTable, b: DbTable) => b.columns.length - a.columns.length || b.access.length - a.access.length || a.node.label.localeCompare(b.node.label);
   const groups = [...groupMap.values()].map((g) => ({ ...g, tables: g.tables.sort(order) })).sort((a, b) => b.tables.length - a.tables.length || a.prefix.localeCompare(b.prefix));
   views.sort((a, b) => a.node.label.localeCompare(b.node.label));
-  const all = [...tables.values()];
+  retired.sort((a, b) => String(a.node.props.statut).localeCompare(String(b.node.props.statut)) || a.node.label.localeCompare(b.node.label));
+  const all = [...tables.values()].filter((t) => !retired.includes(t));
+  const byBinding: Record<string, number> = {};
+  for (const t of all) if (t.node.type === 'table' && t.node.props.rattachement) byBinding[String(t.node.props.rattachement)] = (byBinding[String(t.node.props.rattachement)] ?? 0) + 1;
   return {
     database,
     engines: graph.nodes.filter((n) => n.type === 'tech' && n.subtype === 'sgbd').sort((a, b) => a.label.localeCompare(b.label)),
     groups,
     views,
+    retired,
     links,
     declaredTables,
     stats: {
-      tables: all.filter((t) => t.node.type === 'table').length,
+      // tables in place (a `X_*` family named by the doc is not a table)
+      tables: all.filter((t) => t.node.type === 'table' && t.node.subtype !== 'famille de tables').length,
       views: views.length,
       tablesWithColumns: all.filter((t) => t.columns.length).length,
       columns: all.reduce((n, t) => n + t.columns.length, 0),
@@ -302,6 +317,7 @@ export function buildSchema(graph: Graph, docs: DocsBundle): DbSchema {
       links: links.length,
       accessEdges,
       inferredColumns: all.reduce((n, t) => n + t.columns.filter((c) => c.inferred).length, 0),
+      byBinding,
     },
   };
 }

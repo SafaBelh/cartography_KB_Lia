@@ -77,7 +77,8 @@ export function buildOutputs(o: BuildOptions): { graph: Graph; docs: DocsBundle;
   for (const d of dx.declared) {
     const mapped = nodes.filter((n) => n.type === d.type && (!d.subtype || n.subtype === d.subtype || n.props.paquet === d.subtype)).length;
     const where = `${d.provenance.file.split('/').pop()}:${d.provenance.line}`;
-    checks.push({ id: `declared-${d.id}`, label: d.label, expected: `${d.count} (déclaré ${where})`, actual: `${mapped} nommés dans la doc`, status: 'n/a', note: 'code source non chargé : seuls les éléments nommés dans la doc sont cartographiés' });
+    if (d.complete) checks.push({ id: `declared-${d.id}`, label: d.label, expected: `${d.count} (déclaré ${where})`, actual: `${mapped} cartographiés`, status: mapped === d.count ? 'pass' : 'fail', note: 'la doc liste chaque élément (inventaire) : le compte doit être exact' });
+    else checks.push({ id: `declared-${d.id}`, label: d.label, expected: `${d.count} (déclaré ${where})`, actual: `${mapped} nommés dans la doc`, status: 'n/a', note: 'code source non chargé : seuls les éléments nommés dans la doc sont cartographiés' });
   }
   const noProv = nodes.filter((n) => !n.provenance.length);
   checks.push({ id: 'provenance', label: 'Chaque nœud a une provenance', expected: '0 sans provenance', actual: `${noProv.length} sans provenance`, status: noProv.length ? 'fail' : 'pass' });

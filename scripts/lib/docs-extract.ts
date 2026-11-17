@@ -52,7 +52,7 @@ export interface Hit {
 export interface DocExtraction {
   docs: MdDoc[];
   lineNodes: Map<string, Map<number, Set<string>>>;
-  declared: { id: string; label: string; count: number; type: NodeType; provenance: Provenance; subtype?: string }[];
+  declared: { id: string; label: string; count: number; type: NodeType; provenance: Provenance; subtype?: string; complete?: boolean }[];
   unmapped: { item: string; reason: string; where?: string }[];
 }
 
@@ -74,10 +74,22 @@ const CREATE_CUE = /\(re\)créé|(?<![A-Za-zÀ-ÿ])cré(?:e|ée|ées|ent|ation)(
 
 export function loadDocs(docsDir: string, cfg: CartoConfig): MdDoc[] {
   const legend = new RegExp(cfg.docs.legendLinePattern);
-  return readdirSync(docsDir)
-    .filter((f) => /^\d\d-.*\.md$/i.test(f))
-    .sort()
-    .map((f) => parseMarkdown(f, readFileSync(join(docsDir, f), 'utf8'), legend));
+  // one file per doc number: when several share it (05-…-new.md beside the old 05), cfg.docFiles chooses
+  const byNum = new Map<string, string[]>();
+  for (const f of readdirSync(docsDir).filter((x) => /^\d\d-.*\.md$/i.test(x)).sort()) {
+    const num = f.slice(0, 2);
+    byNum.set(num, [...(byNum.get(num) ?? []), f]);
+  }
+  const chosen: string[] = [];
+  for (const [num, files] of byNum) {
+    const want = cfg.docFiles?.[num];
+    if (want) {
+      if (!files.includes(want)) throw new Error(`docFiles.${num} = « ${want} » introuvable dans ${docsDir} (présents : ${files.join(', ')})`);
+      chosen.push(want);
+    } else if (files.length > 1) throw new Error(`Plusieurs documents ${num} (${files.join(', ')}) : choisir le bon dans « docFiles » de la configuration`);
+    else chosen.push(files[0]);
+  }
+  return chosen.sort().map((f) => parseMarkdown(f, readFileSync(join(docsDir, f), 'utf8'), legend));
 }
 
 export function extractFromDocs(cfg: CartoConfig, docsDir: string, b: GraphBuilder, opts: { provenancePrefix: string }): DocExtraction {
@@ -409,7 +421,7 @@ export function extractFromDocs(cfg: CartoConfig, docsDir: string, b: GraphBuild
         }
       }
       // migrations
-      const migs = parseMigration(t, migrationCtx(doc, line) || (doc.file.startsWith(cfg.docs.migrationTree.file) && inSection(line, new RegExp(cfg.docs.migrationTree.heading)) && cellAt(line, sp.start) === 0));
+      const migs = parseMigration(t, migrationCtx(doc, line) || (doc.file.startsWith(cfg.docs.migrationTree.file) && inSection(line, new RegExp(cfg.docs.migrationTree.heading)) && cellAt(line, sp.start) === 0) || /^(?:Créée par|Script de suppression)$/.test(colHeader));
       if (migs.length) {
         const g = ++groupSeq;
         for (const m of migs) push({ ...base0, group: g, id: m.id, type: 'migration', subtype: m.subtype, label: m.label, props: m.parent ? { parent: m.parent } : undefined, aliases: [m.label.replace(/\/$/, '')] });
@@ -710,7 +722,8 @@ export function extractFromDocs(cfg: CartoConfig, docsDir: string, b: GraphBuild
   // ------------------------------------------------------------------ 6. relations from lines
   const edge = (source: string, target: string, rel: Relation, p: Provenance, label?: string) => (b.has(source) && b.has(target) ? b.addEdge(source, target, rel, p, label) : null);
   const special = new Set<string>(); // "docId:line" rows handled by a dedicated parser
-  const specialSections: SectionRef[] = [cfg.docs.entities, cfg.docs.restTable, cfg.docs.objects, cfg.docs.actCodes, cfg.docs.tablePrefixes, cfg.docs.resourcePrefixes, ...cfg.docs.conventions, ...lifecycles.defs];
+  const inventorySections: SectionRef[] = (cfg.docs.tableInventory?.headings ?? []).map((heading) => ({ file: cfg.docs.tableInventory!.file, heading }));
+  const specialSections: SectionRef[] = [cfg.docs.entities, ...inventorySections, cfg.docs.restTable,cfg.docs.objects, cfg.docs.actCodes, cfg.docs.tablePrefixes, cfg.docs.resourcePrefixes, ...cfg.docs.conventions, ...lifecycles.defs];
   for (const d of docs) for (const l of d.lines) {
     if (d.file.startsWith(cfg.docs.glossary.file) || d.file.startsWith(cfg.docs.issues.file)) special.add(`${d.id}:${l.n}`);
     else if (l.kind === 'table-row' && specialSections.some((r) => sectionMatch(d, r) && inSection(l, new RegExp(r.heading)))) special.add(`${d.id}:${l.n}`);
@@ -963,6 +976,133 @@ export function extractFromDocs(cfg: CartoConfig, docsDir: string, b: GraphBuild
     }
   }
 
+  // full inventory (05 §3.5) and view bindings (05 §3.3): one row = one table or view, columns read by header name
+  //   « Entité JPA | Table | Objet moteur LIA | Créée par »   → entity maps-to, objects maps-to, script creates
+  //   « Vue | Entité JPA | Objet moteur LIA »                → same for views
+  //   « Table supprimée | Script de suppression | Objet … »  → table node with statut « supprimée », script drops
+  //   « Noms cités sans script de création » paragraph       → name node with statut « jamais créée »
+  const inv = cfg.docs.tableInventory;
+  const inventoried = new Set<string>();
+  if (inv) {
+    const d = docByPrefix(inv.file);
+    if (d) {
+      const intro = inv.introPattern ? d.lines.find((l) => new RegExp(inv.introPattern!).test(l.raw)) : undefined;
+      const introTag = intro?.raw.match(/\[([VH])(?![A-Za-zÀ-ÿ])[^\]]*\]/);
+      const introSection = intro?.headingPath[intro.headingPath.length - 1];
+      const ip = (l: MdLine, method: string): Provenance => {
+        const p = prov(d, l, method);
+        // rows carry no tag: the intro line of the inventory (« Relevé … [V] : ») qualifies them
+        if (p.confidenceFrom === 'fallback' && introTag && intro && introSection && l.n > intro.n && l.headingPath.includes(introSection)) {
+          p.confidence = introTag[1] as Confidence;
+          p.confidenceFrom = 'section';
+          p.metadata = { ...p.metadata, tag: `${introTag[0]} (${d.id}:${intro.n})` };
+        }
+        return p;
+      };
+      const objectNode = (code: string, p: Provenance) => {
+        const known = objects.get(code);
+        return b.upsertNode(`obj:${code}`, { type: 'object', label: code, subtype: known ? undefined : 'objet du dictionnaire dd_lia', description: known ? `Objet « ${known.label} » du moteur LIA` : 'Objet du dictionnaire dd_lia.xml du moteur LIA (tableStockage)', aliases: [code], props: known ? { objet: known.label } : {} }, p);
+      };
+      const objectCodes = (cell: string | undefined) => plain(cell ?? '').split(/,\s*/).map((x) => x.trim()).filter((x) => x && x !== '—' && /^[A-Za-z][\w]*$/.test(x));
+      for (const heading of inv.headings) for (const l of rowsOf(d, heading)) {
+        const hdr = (tableHeader(d, l) ?? []).map((h) => plain(h));
+        const col = (re: RegExp) => hdr.findIndex((h) => re.test(h));
+        const ti = col(/^(?:Table|Vue)$/), ei = col(/^Entité JPA$/), oi = col(/^Objet moteur/), ci = col(/^Créée par$/), di = col(/^Table supprimée$/), si = col(/^Script de suppression$/);
+        const cells = l.cells!;
+        const hs = lineHits(d, l);
+        const sub = l.headingPath[l.headingPath.length - 1] ?? '';
+        if (ti >= 0 && ei >= 0) {
+          const name = spansIn(cells[ti] ?? '')[0];
+          if (!name || !/^[A-Z][A-Z0-9_]*$/.test(name)) continue;
+          const isView = /^Vue$/.test(hdr[ti]);
+          const id = `${isView ? 'view' : 'tbl'}:${name}`;
+          const p = ip(l, 'table-inventory');
+          // « PRJ — Projet (préparation de la consultation) (40) » / « Tables sans préfixe (2) »
+          const hm = plain(sub).match(/^([A-Z0-9]+)\s+—\s+(.+?)\s+\(\d+\)$/);
+          const prefix = isView ? name.split('_')[0] : hm ? hm[1] : '—';
+          const domain = isView ? tablePrefix.get(prefix)?.domain ?? 'Vues' : hm ? hm[2] : plain(sub).replace(/\s*\(\d+\)$/, '');
+          const n = b.upsertNode(id, { type: isView ? 'view' : 'table', label: name, subtype: isView ? 'vue' : 'table', aliases: [name] }, p);
+          n.props.prefixe = prefix;
+          n.props.domaine = domain;
+          n.props.statut = 'en place';
+          markLine(d, l.n, id);
+          const entText = plain(cells[ei] ?? '');
+          const ents = hs.filter((h) => h.cell === ei && (h.type === 'class' || h.type === 'service' || h.type === 'page'));
+          for (const e of ents) {
+            edge(e.id, id, 'maps-to', p);
+            const en = b.get(e.id)!;
+            en.subtype = 'entité JPA';
+            const pk = hs.find((h) => h.cell === ei && h.type === 'package');
+            if (pk && !en.props.paquet) {
+              en.props.paquet = pk.id.slice(4);
+              edge(pk.id, e.id, 'contains', p);
+            }
+          }
+          if (entText && entText !== '—') {
+            n.props.entiteJPA = entText;
+            if (!ents.length) unmapped.set(`inv:${entText}`, { item: entText, reason: 'Entité JPA de l’inventaire non reconnue comme classe', where: `${d.file}:${l.n}` });
+          }
+          const codes = objectCodes(cells[oi]);
+          for (const c of codes) {
+            objectNode(c, p);
+            markLine(d, l.n, `obj:${c}`);
+            edge(`obj:${c}`, id, 'maps-to', p);
+          }
+          if (codes.length) n.props.objetsMoteur = codes.join(' · ');
+          n.props.rattachement = ents.length || (entText && entText !== '—') ? (codes.length ? 'entité JPA et objet du moteur' : 'entité JPA seulement') : codes.length ? 'objet du moteur seulement' : 'ni entité ni objet';
+          if (ci >= 0) {
+            n.props.creeePar = plain(cells[ci] ?? '');
+            const migs = hs.filter((h) => h.cell === ci && h.type === 'migration');
+            const script = migs[migs.length - 1];
+            if (script) edge(script.id, id, 'creates', p);
+          }
+          inventoried.add(id);
+        } else if (di >= 0) {
+          const name = plain(cells[di] ?? '');
+          if (!/^[A-Z][A-Z0-9_]*$/.test(name)) continue;
+          const id = `tbl:${name}`;
+          const p = ip(l, 'table-inventory:dropped');
+          const n = b.upsertNode(id, { type: 'table', label: name, subtype: 'table supprimée', aliases: [name] }, p);
+          n.subtype = 'table supprimée';
+          n.props.prefixe = name.split('_')[0];
+          n.props.statut = 'supprimée';
+          markLine(d, l.n, id);
+          if (si >= 0) {
+            n.props.supprimeePar = plain(cells[si] ?? '');
+            const migs = hs.filter((h) => h.cell === si && h.type === 'migration');
+            const script = migs[migs.length - 1];
+            if (script) edge(script.id, id, 'drops', p);
+          }
+          const codes = objectCodes(cells[oi]);
+          for (const c of codes) {
+            objectNode(c, p);
+            markLine(d, l.n, `obj:${c}`);
+            edge(`obj:${c}`, id, 'maps-to', p, 'table supprimée');
+          }
+          if (codes.length) n.props.objetsMoteur = codes.join(' · ');
+          inventoried.add(id);
+        }
+      }
+      // « ADC_CODEPROG (objet cprg), EDM_MSGEMIS (fmse) … figurent dans dd_lia.xml mais aucun script ne les crée »
+      for (const l of sectionLines(d, inv.noScriptHeading)) {
+        if (l.kind !== 'para') continue;
+        for (const m of l.raw.matchAll(/(?<![A-Za-z0-9_.])([A-Z][A-Z0-9_]*(?:\.[A-Z][A-Z0-9_]*)?)\s+\((?:objet\s+)?([A-Za-z]\w*)\)/g)) {
+          const id = `tbl:${m[1]}`;
+          const p = prov(d, l, 'table-inventory:no-script');
+          const n = b.upsertNode(id, { type: 'table', label: m[1], subtype: 'nom sans script de création', aliases: [m[1]] }, p);
+          n.props.prefixe = m[1].split(/[_.]/)[0];
+          n.props.statut = 'jamais créée';
+          markLine(d, l.n, id);
+          objectNode(m[2], p);
+          markLine(d, l.n, `obj:${m[2]}`);
+          edge(`obj:${m[2]}`, id, 'maps-to', p, 'aucun script de création');
+          n.props.objetsMoteur = m[2];
+          inventoried.add(id);
+        }
+      }
+    }
+  }
+
   // REST resources (06 §5.2): class(es) ↔ endpoint(s)
   {
     const d = docByPrefix(cfg.docs.restTable.file);
@@ -1034,7 +1174,7 @@ export function extractFromDocs(cfg: CartoConfig, docsDir: string, b: GraphBuild
   {
     const d = docByPrefix(cfg.docs.singleDatasource.file);
     const l = d?.lines.find((x) => new RegExp(cfg.docs.singleDatasource.pattern).test(x.raw));
-    if (d && l && b.has('sys:db')) for (const n of b.nodes.values()) if (n.type === 'table' || n.type === 'view') edge(n.id, 'sys:db', 'part-of', prov(d, l, 'single-datasource', undefined, { note: 'la doc déclare une seule source de données JNDI' }));
+    if (d && l && b.has('sys:db')) for (const n of b.nodes.values()) if ((n.type === 'table' || n.type === 'view') && (n.props.statut === undefined || n.props.statut === 'en place')) edge(n.id, 'sys:db', 'part-of', prov(d, l, 'single-datasource', undefined, { note: 'la doc déclare une seule source de données JNDI' }));
   }
 
   // endpoint hierarchy: /app/guest/* is part of /app/*
@@ -1135,7 +1275,7 @@ export function extractFromDocs(cfg: CartoConfig, docsDir: string, b: GraphBuild
     const d = docByPrefix(dd.file);
     const l = d?.lines.find((x) => new RegExp(dd.pattern).test(x.raw));
     if (!d || !l) continue;
-    declared.push({ id: dd.id, label: dd.label, count: Number(l.raw.match(new RegExp(dd.pattern))![1]), type: dd.type, subtype: dd.subtype, provenance: prov(d, l, 'declared-count') });
+    declared.push({ id: dd.id, label: dd.label, count: Number(l.raw.match(new RegExp(dd.pattern))![1]), type: dd.type, subtype: dd.subtype, complete: dd.complete, provenance: prov(d, l, 'declared-count') });
   }
 
   // terms searched and absent from the code (11 §7) are reported as unmapped

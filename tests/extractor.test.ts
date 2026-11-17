@@ -34,6 +34,7 @@ describe('section « Questions pour l’équipe » (fixture synthétique)', () =
     const cfg = JSON.parse(require('node:fs').readFileSync(join(ROOT, 'cartography.config.json'), 'utf8'));
     cfg.docsDir = '.';
     cfg.provenanceRoot = '.';
+    delete cfg.docFiles;
     writeFileSync(cfgPath, JSON.stringify(cfg));
     const { graph } = buildOutputs({ configPath: cfgPath, now: '2026-01-01T00:00:00.000Z' });
     const q1 = graph.nodes.find((n) => n.id === 'q:05-1')!;
@@ -61,7 +62,7 @@ describe('cohérence avec la base de connaissances LiaWeb', () => {
     expect(docs.docs).toHaveLength(13);
     expect(stats.byType.module).toBe(17); // titres de niveau 3 des parties A et B de 04
     expect(graph.nodes.filter((n) => n.type === 'workflow')).toHaveLength(11);
-    expect(graph.nodes.filter((n) => n.type === 'question')).toHaveLength(60); // 5+7+6+5+6+4+5 + 22 (10 §4)
+    expect(graph.nodes.filter((n) => n.type === 'question')).toHaveLength(61); // 39 items des sections « Questions » (dont 8 en 05 régénéré) + 22 (10 §4)
     expect(graph.nodes.filter((n) => n.type === 'issue' && /^issue:[BS]\d+$/.test(n.id))).toHaveLength(32); // B1–B9, S1–S23
     expect(node('svc:ProjetCreateService')?.props.paquet).toBe('com.ordiges.projet.service');
     expect(node('page:ClotureMarchePage')).toBeDefined();
@@ -74,6 +75,38 @@ describe('cohérence avec la base de connaissances LiaWeb', () => {
     expect(rel('obj:fcns', 'tbl:CNS_CONSULTATION')).toContain('maps-to');
     expect(rel('mig:maj0001.sql', 'view:VUE_AUTENTIF')).toContain('creates');
     expect(rel('mig:maj99', 'view:VUE_AUTENTIF')).toEqual([]); // le dossier d'un chemin n'est pas acteur de la phrase
+  });
+
+  it('lit le 05 régénéré (et lui seul) et son inventaire complet des tables (05 §3.5)', () => {
+    expect(docs.docs.find((d) => d.id === '05')?.file).toBe('05-database-documentation-new.md');
+    const live = graph.nodes.filter((n) => n.type === 'table' && n.subtype === 'table');
+    expect(live).toHaveLength(351);
+    expect(graph.nodes.filter((n) => n.type === 'view')).toHaveLength(17);
+    // bilan de 05 §3.5 : 236 + 63 + 31 + 21
+    const by = (k: string) => live.filter((n) => n.props.rattachement === k).length;
+    expect([by('entité JPA et objet du moteur'), by('entité JPA seulement'), by('objet du moteur seulement'), by('ni entité ni objet')]).toEqual([236, 63, 31, 21]);
+    // une ligne = entité maps-to, objets maps-to, script creates
+    expect(rel('cls:PrjSousCritere', 'tbl:PRJ_SOUS_CRITERE')).toContain('maps-to');
+    expect(rel('obj:SousCritere', 'tbl:PRJ_SOUS_CRITERE')).toContain('maps-to');
+    expect(rel('mig:dbu6102001.sql', 'tbl:PRJ_SOUS_CRITERE')).toContain('creates');
+    expect(rel('mig:init', 'tbl:PRJ_PROJET')).toContain('creates');
+    expect(node('tbl:PRJ_SOUS_CRITERE')?.props).toMatchObject({ prefixe: 'PRJ', domaine: 'Projet (préparation de la consultation)', statut: 'en place' });
+    expect(node('tbl:DASHBOARD')?.props.prefixe).toBe('—');
+    expect(rel('cls:VueUtilisateur', 'view:VUE_UTILISATEUR')).toContain('maps-to');
+    // lignes non étiquetées : le [V] de « Relevé du 17/11/2026 … [V] : » qualifie l'inventaire
+    const p = node('tbl:PRJ_SOUS_CRITERE')!.provenance.find((x) => x.method === 'table-inventory')!;
+    expect(p).toMatchObject({ confidence: 'V', confidenceFrom: 'section' });
+    // tables supprimées : hors source de données, script drops, objet qui la cite encore
+    const dropped = graph.nodes.filter((n) => n.props.statut === 'supprimée');
+    expect(dropped).toHaveLength(24);
+    expect(rel('mig:dbu6105007.sql', 'tbl:MARC_ACTE')).toContain('drops');
+    expect(rel('obj:mact', 'tbl:MARC_ACTE')).toContain('maps-to');
+    expect(rel('tbl:MARC_ACTE', 'sys:db')).toEqual([]);
+    expect(rel('tbl:PRJ_PROJET', 'sys:db')).toContain('part-of');
+    // noms du dictionnaire sans script : [H] comme leur ligne
+    const never = graph.nodes.filter((n) => n.props.statut === 'jamais créée');
+    expect(never.map((n) => n.label).sort()).toEqual(['ADC_CODEPROG', 'EDM_MSGEMIS', 'EDM_ORGANE', 'EDM_SESSIONECHANGE', 'MO.MO', 'MO.MOOPERATION']);
+    for (const n of never) expect(n.confidence).toBe('H');
   });
 
   it('construit les cycles de vie de 07 avec transitions explicites et déduites [H]', () => {

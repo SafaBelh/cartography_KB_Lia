@@ -1,5 +1,24 @@
 # Changements
 
+## 1.2.0 — 2026-11-17
+
+Synchronisation avec le 05 régénéré depuis le code source (`05-database-documentation-new.md`, version 8.5.0).
+
+- **Choix du document** : `docFiles` dans `cartography.config.json` désigne le fichier lu pour un numéro (`"05": "05-database-documentation-new.md"`). L’ancien 05 est ignoré. Deux fichiers de même numéro sans choix explicite arrêtent l’extraction (plus de chargement en double).
+- **Inventaire complet des tables** (05 §3.5) lu par un analyseur dédié (règle `table-inventory`) :
+  - 351 tables en place sur 351 (avant : 95 nommées), 17 vues sur 17 (avant : 9) ;
+  - pour chaque table : domaine, entité JPA (`maps-to`), objets du moteur (`maps-to`), script de création (`creates`), rattachement ;
+  - bilan identique à celui du document : 236 / 63 / 31 / 21 ;
+  - 24 tables supprimées (nouvelle relation `drops` depuis le script de suppression) et 6 noms du dictionnaire jamais créés, hors source de données ;
+  - lignes sans tag : [V] repris de la phrase « Relevé du 17/11/2026 … [V] : » (05:201).
+- **Comptes déclarés** : « Schéma actuel : 351 tables en place », 17 vues et 24 tables supprimées deviennent des contrôles stricts (réussi / échoué). Motif des objets `dd_lia` corrigé pour la nouvelle phrase (363 objets).
+- **Vue Base de données** : titre « version 8.5.0 », tuile « Tables en place 351 / 351 », rattachement sur chaque carte (entité, objets, script, ligne de la doc), filtre par rattachement, groupe « sans préfixe », section « Hors schéma », migrations avec tables créées et supprimées.
+- **Atlas** : « Tables en place » ne compte que les tables en place (ni familles `X_*`, ni tables supprimées).
+- **Diagrammes** : « Entités et tables » limité aux entités centrales (05 §3.2, 11 §1) ; « Migrations dbupdate » montre les tables créées ou supprimées par un script.
+- Bandeau et pied de menu mentionnent le 05 du 17/11/2026.
+- Graphe : 2 478 nœuds et 6 237 arêtes (avant : 1 537 et 3 676). Le bloc de données passe de ≈ 4 Mo à 6,7 Mo (simple avertissement de Vite).
+- Qualité : 30 tests, `tsc` et build au vert, `npm run check` 2465/2465 nœuds retrouvés sur leur ligne, tous les contrôles intégrés réussis.
+
 ## 1.1.0 — 2026-11-12
 
 - **Nouvelle vue « Modules »** (`#/modules`, `g m`) : catalogue en cartes, sans canevas.

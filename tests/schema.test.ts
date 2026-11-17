@@ -20,6 +20,16 @@ describe('schéma (vue Base de données)', () => {
     expect(schema.declaredTables?.count).toBe(351);
   });
 
+  it('montre les 351 tables en place de 05 §3.5 et met à part tables supprimées et noms jamais créés', () => {
+    expect(schema.stats.tables).toBe(351);
+    expect(schema.stats.views).toBe(17);
+    expect(schema.stats.byBinding).toEqual({ 'entité JPA et objet du moteur': 236, 'entité JPA seulement': 63, 'objet du moteur seulement': 31, 'ni entité ni objet': 21 });
+    expect(schema.retired).toHaveLength(30); // 24 supprimées + 6 sans script
+    for (const t of schema.retired) expect(t.storeEdge).toBeUndefined();
+    expect(all.some((t) => t.node.props.statut === 'supprimée')).toBe(false);
+    expect(schema.groups.find((g) => g.prefix === 'NEGO')?.domain).toBe('Négociation (candidatures, offres, réunions)');
+  });
+
   it('range les tables par préfixe de 05 §3.1', () => {
     const marc = schema.groups.find((g) => g.prefix === 'MARC')!;
     expect(marc.domain).toBe('Marché, exécution');

@@ -50,6 +50,8 @@ export interface DeclaredDef {
   type: NodeType;
   /** Optional filter on the counted nodes (subtype or package prefix). */
   subtype?: string;
+  /** The docs list every item (05 §3.5 inventory): the count must match exactly (pass / fail instead of n/a). */
+  complete?: boolean;
 }
 
 export interface CartoConfig {
@@ -57,6 +59,8 @@ export interface CartoConfig {
   title: string;
   /** Knowledge-base folder (13 Markdown docs), relative to this config file. */
   docsDir: string;
+  /** Doc number → file name, when several files share a number (« 05-database-documentation-new.md » replaces the old 05). */
+  docFiles?: Record<string, string>;
   /** Provenance paths are written relative to this folder (relative to this config file). */
   provenanceRoot: string;
   scopeNote: string;
@@ -82,6 +86,17 @@ export interface CartoConfig {
     resourcePrefixes: SectionRef;
     views: SectionRef;
     entities: SectionRef;
+    /** Full table inventory (05 §3.5) and view bindings (05 §3.3): one row per table / view, read by header names. */
+    tableInventory?: {
+      file: string;
+      headings: string[];
+      /** sub-section of dropped tables (plain names, not in place) */
+      droppedHeading: string;
+      /** sub-section listing names of the engine dictionary that no script creates */
+      noScriptHeading: string;
+      /** intro line whose tag qualifies the untagged rows of its section (« Relevé du 17/11/2026 … [V] : ») */
+      introPattern?: string;
+    };
     schemaChain: { file: string; pattern: string };
     columnPrefixes: { file: string; pattern: string };
     singleDatasource: { file: string; pattern: string };

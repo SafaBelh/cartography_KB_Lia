@@ -141,7 +141,8 @@ function HeroMap() {
   const hl = hover ? LINKS.find((l) => l.key === hover) : null;
   const hs = hover ? supports[hover] : null;
   const sysCount = (cat: string) => sysOf(cat).length;
-  const tables = nodesOf('table').length;
+  // tables in place only (05 §3.5): dropped tables, names never created and `X_*` families are not counted
+  const tables = nodesOf('table').filter((n) => n.subtype === 'table').length;
   const declaredTables = graph.meta.declared.find((d) => d.id === 'tables')?.count;
 
   const modBox = (m: GNode, x: number, y: number) => (
@@ -209,7 +210,7 @@ function HeroMap() {
         {BOXES.map((b) => {
           const isFilters = b.key === 'filters';
           const sys = b.key.startsWith('sys-') ? b.key.slice(4) : '';
-          const sub = sys ? `${sysCount(sys)} système(s)` : b.key === 'db' ? `${tables} tables nommées${declaredTables ? ` / ${declaredTables}` : ''}` : b.sub;
+          const sub = sys ? `${sysCount(sys)} système(s)` : b.key === 'db' ? `${tables} tables en place${declaredTables ? ` / ${declaredTables}` : ''}` : b.sub;
           return (
             <g key={b.key} className="cursor-pointer" onClick={() => (b.href ? nav(b.href) : b.node && has(b.node) ? inspect(b.node) : undefined)}>
               <rect x={b.x} y={b.y} width={b.w} height={b.h} rx={12} fill="var(--surface)" stroke="var(--border-strong)" />
@@ -395,6 +396,7 @@ function Quality() {
 export default function Atlas() {
   const nav = useNavigate();
   const decl = (id: string) => graph.meta.declared.find((d) => d.id === id)?.count;
+  const liveTables = nodesOf('table').filter((n) => n.subtype === 'table').length; // in place (05 §3.5)
   const issues = nodesOf('issue');
   const confirmed = issues.filter((i) => i.props.statut === 'confirmé').length;
   const code = nodesOf('page').length + nodesOf('service').length + nodesOf('class').length;
@@ -424,7 +426,7 @@ export default function Atlas() {
         <div className="grid grid-cols-2 gap-3 @min-[620px]:grid-cols-4 @min-[1120px]:grid-cols-7">
           <Kpi delay={0.02} icon={<Layers size={14} />} label="Modules (04)" value={nodesOf('module').length} sub={`${nodesOf('package').length} paquets · ${nodesOf('brick').length} briques produit`} onClick={() => nav('/graph')} />
           <Kpi delay={0.06} icon={<Boxes size={14} />} label="Classes, pages, services" value={code} sub={<span>{nodesOf('page').length} pages / ≈ {decl('pages') ?? '?'} montées</span>} meter={[nodesOf('page').length, decl('pages') ?? 1]} onClick={() => nav('/graph')} />
-          <Kpi delay={0.1} icon={<Database size={14} />} label="Tables nommées" value={<span className="tnum">{nodesOf('table').length}<span className="text-[15px] font-medium text-muted"> / {decl('tables') ?? '?'}</span></span>} meter={[nodesOf('table').length, decl('tables') ?? 1]} sub={`${nodesOf('view').length} vues · ${nodesOf('migration').length} migrations citées`} onClick={() => nav('/database')} />
+          <Kpi delay={0.1} icon={<Database size={14} />} label="Tables en place" value={<span className="tnum">{liveTables}<span className="text-[15px] font-medium text-muted"> / {decl('tables') ?? '?'}</span></span>} meter={[liveTables, decl('tables') ?? 1]} sub={`${nodesOf('view').length} vues · ${nodesOf('migration').length} migrations citées`} onClick={() => nav('/database')} />
           <Kpi delay={0.14} icon={<RefreshCcw size={14} />} label="Cycles de vie" value={nodesOf('lifecycle').length} sub={`${nodesOf('state').length} états · ${nodesOf('workflow').length} enchaînements`} onClick={() => nav('/lifecycles')} />
           <Kpi delay={0.18} icon={<Globe size={14} />} label="Systèmes externes" value={nodesOf('system').length} sub={`${nodesOf('endpoint').length} points d’entrée · ${nodesOf('tech').length} technologies`} onClick={() => nav('/data')} />
           <Kpi delay={0.22} icon={<AlertTriangle size={14} />} label="Problèmes connus" value={issues.length} sub={<span><span className="text-critical">{confirmed} confirmés</span> · bugs, sécurité, secrets, dette</span>} onClick={() => nav('/risks?kind=issue')} />

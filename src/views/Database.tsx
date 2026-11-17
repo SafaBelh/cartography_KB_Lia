@@ -44,6 +44,36 @@ function ColumnRow({ c }: { c: Column }) {
   );
 }
 
+/** Inventory facts of 05 §3.5 / §3.3 (node props written by the extractor, each backed by the row's provenance). */
+function Binding({ t }: { t: DbTable }) {
+  const p = t.node.props;
+  const inv = t.node.provenance.find((x) => x.method.startsWith('table-inventory'));
+  if (!inv) return null;
+  const doc = inv.file.split('/').pop()!.slice(0, 2);
+  const rows: [string, string][] = [];
+  if (p.statut && p.statut !== 'en place') rows.push(['Statut', String(p.statut)]);
+  if (p.supprimeePar) rows.push(['Supprimée par', String(p.supprimeePar)]);
+  if (p.statut === 'en place') rows.push(['Entité JPA', String(p.entiteJPA ?? '—')]);
+  rows.push(['Objet(s) moteur', String(p.objetsMoteur ?? '—')]);
+  if (p.creeePar) rows.push(['Créée par', String(p.creeePar)]);
+  return (
+    <div className="flex min-w-0 flex-col gap-0.5 text-[11px]">
+      {rows.map(([k, v]) => (
+        <div key={k} className="flex min-w-0 items-baseline gap-2">
+          <span className="w-[92px] shrink-0 text-muted">{k}</span>
+          <span className={cx('min-w-0 truncate font-mono text-[10.5px]', v === '—' ? 'text-muted' : 'text-fg-2')} title={v}>
+            {v}
+          </span>
+        </div>
+      ))}
+      <Link to={`/docs/${doc}?line=${inv.line}`} className="truncate font-mono text-[10.5px] text-muted hover:text-accent" title={inv.snippet}>
+        {p.rattachement ? `${String(p.rattachement)} · ` : ''}
+        {doc}:{inv.line}
+      </Link>
+    </div>
+  );
+}
+
 function TableCard({ t, open }: { t: DbTable; open: boolean }) {
   const [, inspect] = useInspect();
   return (
@@ -55,6 +85,7 @@ function TableCard({ t, open }: { t: DbTable; open: boolean }) {
         </button>
         <ConfidenceBadge c={t.node.confidence} compact from={t.node.provenance[0]?.confidenceFrom} />
       </div>
+      <Binding t={t} />
       {t.columns.length > 0 ? (
         <ul className="divide-y divide-[var(--border)]">
           {t.columns.map((c) => (
@@ -101,13 +132,16 @@ export default function Database() {
   const [q, setQ] = useState('');
   const [onlyCols, setOnlyCols] = useState(false);
   const [prefix, setPrefix] = useState<string | null>(null);
+  const [binding, setBinding] = useState<string | null>(null);
   const keep = (t: DbTable) =>
     (!onlyCols || t.columns.length > 0) &&
+    (!binding || t.node.props.rattachement === binding) &&
     (!q || t.node.label.toLowerCase().includes(q.toLowerCase()) || t.columns.some((c) => c.name.toLowerCase().includes(q.toLowerCase()))) &&
     store.confidence.has(t.node.confidence) &&
     passesDomain(t.node, store.domainFilter);
-  const groups = useMemo(() => schema.groups.map((g) => ({ ...g, tables: g.tables.filter(keep) })).filter((g) => g.tables.length && (!prefix || g.prefix === prefix)), [q, onlyCols, prefix, store.confidence, store.domainFilter]); // eslint-disable-line react-hooks/exhaustive-deps
-  const views = schema.views.filter(keep);
+  const groups = useMemo(() => schema.groups.map((g) => ({ ...g, tables: g.tables.filter(keep) })).filter((g) => g.tables.length && (!prefix || g.prefix === prefix)), [q, onlyCols, prefix, binding, store.confidence, store.domainFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+  const views = binding ? [] : schema.views.filter(keep);
+  const retired = schema.retired.filter((t) => !binding && (!onlyCols || t.columns.length > 0) && (!q || t.node.label.toLowerCase().includes(q.toLowerCase())));
   const migrations = nodesOf('migration');
   const st = schema.stats;
 
@@ -117,8 +151,8 @@ export default function Database() {
 
   return (
     <div className="mx-auto max-w-[1400px] px-6 pb-16 pt-8">
-      <SectionTitle eyebrow="Base de données" title="Schéma documenté de LiaWeb (05)">
-        Une seule source de données JNDI, trois chemins d’accès (JPA EclipseLink, moteur LIA, JDBC brut). Ne figure ici que ce qu’un document écrit : colonnes citées (chacune liée à sa ligne), clé seulement dans la colonne « Clé » de 05 §3.2, aucune clé étrangère entre colonnes. Le reste est « non documenté ».
+      <SectionTitle eyebrow="Base de données" title="Schéma de LiaWeb, version 8.5.0 (05)">
+        Une seule source de données JNDI, trois chemins d’accès (JPA EclipseLink, moteur LIA, JDBC brut). Chaque table en place vient de l’inventaire de 05 §3.5 (relevé du code du 17/11/2026), avec son entité JPA, ses objets du moteur et le script qui la crée. Les colonnes restent celles qu’un document écrit (chacune liée à sa ligne) ; clé seulement dans la colonne « Clé » de 05 §3.2 ; aucune clé étrangère entre colonnes.
       </SectionTitle>
 
       <div className="mb-6 grid gap-3 md:grid-cols-[1.2fr_1fr]">
@@ -135,7 +169,7 @@ export default function Database() {
           </div>
           <div className="grid grid-cols-2 gap-2 text-[12px] sm:grid-cols-4">
             {[
-              ['Tables nommées', `${st.tables}${schema.declaredTables ? ` / ${schema.declaredTables.count}` : ''}`],
+              ['Tables en place', `${st.tables}${schema.declaredTables ? ` / ${schema.declaredTables.count}` : ''}`],
               ['Vues', String(st.views)],
               ['Colonnes citées', `${st.columns} (${st.tablesWithColumns} tables)`],
               ['Clés (« Clé »)', String(st.pks)],
@@ -148,8 +182,20 @@ export default function Database() {
           </div>
           {schema.declaredTables && (
             <p className="mt-3 text-[11.5px] leading-relaxed text-muted">
-              « {schema.declaredTables.source.snippet} » ({schema.declaredTables.source.doc}:{schema.declaredTables.source.line}) — le DDL (WebContent/dbupdate/init/) n’est pas dans la base de connaissances : {st.inferredColumns} colonne(s) sont rattachées par la seule convention de préfixe et marquées [H] ; 0 clé étrangère est dessinée.
+              « {schema.declaredTables.source.snippet} » ({schema.declaredTables.source.doc}:{schema.declaredTables.source.line}) — les colonnes ne sont pas inventoriées par la doc : {st.inferredColumns} colonne(s) sont rattachées par la seule convention de préfixe et marquées [H] ; 0 clé étrangère est dessinée.
             </p>
+          )}
+          {Object.keys(st.byBinding).length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11.5px] text-fg-2">
+              Rattachement (05 §3.5) :
+              {Object.entries(st.byBinding)
+                .sort((a, b) => b[1] - a[1])
+                .map(([k, v]) => (
+                  <Pill key={k} active={binding === k} onClick={() => setBinding(binding === k ? null : k)}>
+                    {k} <span className="tnum text-muted">{v}</span>
+                  </Pill>
+                ))}
+            </div>
           )}
         </Card>
         <Card className="p-5">
@@ -188,18 +234,18 @@ export default function Database() {
         </Pill>
         {schema.groups.map((g) => (
           <Pill key={g.prefix} active={prefix === g.prefix} onClick={() => setPrefix(prefix === g.prefix ? null : g.prefix)} title={g.domain}>
-            <span className="font-mono">{g.prefix}</span>
+            <span className="font-mono">{g.prefix === '—' ? 'sans préfixe' : g.prefix}</span>
           </Pill>
         ))}
       </div>
 
-      {groups.length === 0 && views.length === 0 && <Empty icon={<Search size={18} />} title="Aucune table ne correspond aux filtres" />}
+      {groups.length === 0 && views.length === 0 && retired.length === 0 && <Empty icon={<Search size={18} />} title="Aucune table ne correspond aux filtres" />}
       {groups.map((g) => (
         <section key={g.prefix} className="mb-8">
           <h3 className="mb-3 flex flex-wrap items-baseline gap-x-2 text-[15px] font-semibold text-fg">
-            <span className="font-mono">{g.prefix}_</span>
+            <span className="font-mono">{g.prefix === '—' ? 'sans préfixe' : `${g.prefix}_`}</span>
             <span className="font-normal text-fg-2">{g.domain}</span>
-            <span className="text-[12px] font-normal text-muted">{g.tables.length}</span>
+            <span className="text-[12px] font-normal text-muted">{g.tables.filter((t) => t.node.subtype !== 'famille de tables').length}</span>
           </h3>
           <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
             {g.tables.map((t) => (
@@ -223,6 +269,19 @@ export default function Database() {
         </section>
       )}
 
+      {retired.length > 0 && !prefix && (
+        <section className="mb-10">
+          <h3 className="mb-3 flex flex-wrap items-baseline gap-x-2 text-[15px] font-semibold text-fg">
+            Hors schéma <span className="text-[12px] font-normal text-muted">{retired.length} noms absents de la base : tables supprimées par une migration et noms du dictionnaire dd_lia jamais créés (05 §3.5)</span>
+          </h3>
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {retired.map((t) => (
+              <TableCard key={t.node.id} t={t} open={focusT === t.node.id} />
+            ))}
+          </div>
+        </section>
+      )}
+
       <SectionTitle eyebrow="Migrations" title="WebContent/dbupdate (05 §4)">
         Exécutées au démarrage par DatabaseUpdater ; une erreur verrouille l’application sur /applocked. Dossiers, scripts et tâches Java nommés par la doc.
       </SectionTitle>
@@ -230,6 +289,7 @@ export default function Database() {
         {migrations.map((m) => {
           const parent = (outEdges.get(m.id) ?? []).find((e) => e.relation === 'part-of');
           const creates = (outEdges.get(m.id) ?? []).filter((e) => e.relation === 'creates');
+          const drops = (outEdges.get(m.id) ?? []).filter((e) => e.relation === 'drops');
           return (
             <Card key={m.id} className="flex min-w-0 flex-col gap-1.5 p-4">
               <div className="flex items-center gap-2">
@@ -247,7 +307,12 @@ export default function Database() {
                   dans <NodeChip id={parent.target} compact />
                 </div>
               )}
-              {creates.length > 0 && <div className="text-[11px] text-muted">crée {creates.length} vue(s)</div>}
+              {creates.length > 0 && (
+                <div className="text-[11px] text-muted">
+                  crée {[[creates.filter((e) => e.target.startsWith('tbl:')).length, 'table(s)'], [creates.filter((e) => e.target.startsWith('view:')).length, 'vue(s)']].filter(([n]) => n).map(([n, w]) => `${n} ${w}`).join(', ')}
+                </div>
+              )}
+              {drops.length > 0 && <div className="text-[11px] text-muted">supprime {drops.length} table(s)</div>}
               <DocRef n={m} />
             </Card>
           );

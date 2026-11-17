@@ -1,7 +1,7 @@
 {
   "name": "liaweb-cartography",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Code Cartography · LiaWeb — carte interactive et hors-ligne de l'application LiaWeb (Java / Wicket / JPA), construite depuis sa base de connaissances",
   "type": "module",
   "scripts": {
