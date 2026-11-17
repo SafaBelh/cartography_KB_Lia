@@ -1,0 +1,424 @@
+{
+  "generatedAt": "2026-11-12T15:15:07.799Z",
+  "mode": "docs-only",
+  "nodes": 1537,
+  "edges": 3676,
+  "byType": {
+    "actCode": 29,
+    "brick": 8,
+    "config": 13,
+    "class": 196,
+    "convention": 42,
+    "doc": 13,
+    "endpoint": 56,
+    "file": 54,
+    "issue": 104,
+    "lifecycle": 11,
+    "licence": 39,
+    "migration": 15,
+    "module": 17,
+    "object": 11,
+    "page": 66,
+    "package": 245,
+    "project": 1,
+    "question": 60,
+    "resource": 17,
+    "sourceRoot": 17,
+    "rule": 13,
+    "state": 55,
+    "service": 50,
+    "system": 43,
+    "table": 95,
+    "tech": 47,
+    "term": 109,
+    "view": 9,
+    "workflow": 11,
+    "step": 91
+  },
+  "byRelation": {
+    "affects": 176,
+    "applies-to": 6,
+    "calls": 39,
+    "configures": 7,
+    "contains": 671,
+    "creates": 9,
+    "defines": 12,
+    "documented-in": 1978,
+    "exposes": 22,
+    "implements": 84,
+    "licensed-by": 10,
+    "maps-to": 32,
+    "mentions": 99,
+    "part-of": 312,
+    "reads": 1,
+    "recommends": 26,
+    "sequence": 83,
+    "sets-state": 12,
+    "transition": 13,
+    "uses": 84
+  },
+  "byConfidence": {
+    "V": 370,
+    "H": 1167
+  },
+  "edgesByConfidence": {
+    "V": 849,
+    "H": 2827
+  },
+  "docOnlyNodes": 1537,
+  "checks": [
+    {
+      "id": "declared-tables",
+      "label": "Tables du schéma initial",
+      "expected": "351 (déclaré 05-database-documentation.md:81)",
+      "actual": "95 nommés dans la doc",
+      "status": "n/a",
+      "note": "code source non chargé : seuls les éléments nommés dans la doc sont cartographiés"
+    },
+    {
+      "id": "declared-entities",
+      "label": "Entités JPA (@Entity)",
+      "expected": "321 (déclaré 05-database-documentation.md:32)",
+      "actual": "31 nommés dans la doc",
+      "status": "n/a",
+      "note": "code source non chargé : seuls les éléments nommés dans la doc sont cartographiés"
+    },
+    {
+      "id": "declared-objects",
+      "label": "Objets du dictionnaire dd_lia",
+      "expected": "363 (déclaré 05-database-documentation.md:47)",
+      "actual": "11 nommés dans la doc",
+      "status": "n/a",
+      "note": "code source non chargé : seuls les éléments nommés dans la doc sont cartographiés"
+    },
+    {
+      "id": "declared-migrations",
+      "label": "Entrées du manifeste dbupdate.xml",
+      "expected": "289 (déclaré 05-database-documentation.md:154)",
+      "actual": "6 nommés dans la doc",
+      "status": "n/a",
+      "note": "code source non chargé : seuls les éléments nommés dans la doc sont cartographiés"
+    },
+    {
+      "id": "declared-pages",
+      "label": "Pages Wicket montées",
+      "expected": "250 (déclaré 02-technical-architecture.md:61)",
+      "actual": "66 nommés dans la doc",
+      "status": "n/a",
+      "note": "code source non chargé : seuls les éléments nommés dans la doc sont cartographiés"
+    },
+    {
+      "id": "declared-services",
+      "label": "Services statiques de com.wtrace.wapp.service",
+      "expected": "69 (déclaré 03-codebase-structure.md:75)",
+      "actual": "6 nommés dans la doc",
+      "status": "n/a",
+      "note": "code source non chargé : seuls les éléments nommés dans la doc sont cartographiés"
+    },
+    {
+      "id": "declared-tests",
+      "label": "Classes de test",
+      "expected": "11 (déclaré 09-testing-and-quality.md:7)",
+      "actual": "12 nommés dans la doc",
+      "status": "n/a",
+      "note": "code source non chargé : seuls les éléments nommés dans la doc sont cartographiés"
+    },
+    {
+      "id": "provenance",
+      "label": "Chaque nœud a une provenance",
+      "expected": "0 sans provenance",
+      "actual": "0 sans provenance",
+      "status": "pass"
+    },
+    {
+      "id": "dangling",
+      "label": "Arêtes orphelines",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass"
+    },
+    {
+      "id": "edge-rule",
+      "label": "Chaque arête porte sa règle (provenance.metadata.rule)",
+      "expected": "0 sans règle",
+      "actual": "0 sans règle",
+      "status": "pass"
+    },
+    {
+      "id": "line-integrity",
+      "label": "Lignes de provenance contenant l’entité citée",
+      "expected": "0 écart",
+      "actual": "0 écart(s)",
+      "status": "pass"
+    },
+    {
+      "id": "secrets",
+      "label": "Aucune valeur de secret copiée",
+      "expected": "0",
+      "actual": "0",
+      "status": "pass",
+      "note": "les secrets de 10 §2 sont cités par emplacement et nature uniquement"
+    }
+  ],
+  "unmapped": [
+    {
+      "item": "Code source LiaWeb (SVN, branche trunk)",
+      "reason": "dépôt non disponible : classes, tables et relations réelles non cartographiées au-delà de ce que la doc nomme"
+    },
+    {
+      "item": "BUD_ARTICLE",
+      "reason": "Code ou nom de colonne non rattaché",
+      "where": "04-functional-documentation.md:23"
+    },
+    {
+      "item": "IsProcedureOuverte",
+      "reason": "Nom CamelCase cité sans indice de classe (ni chemin, ni suffixe, ni colonne « Classe »)",
+      "where": "01-business-context.md:75"
+    },
+    {
+      "item": "ServiceMetier",
+      "reason": "Nom CamelCase cité sans indice de classe (ni chemin, ni suffixe, ni colonne « Classe »)",
+      "where": "02-technical-architecture.md:56"
+    },
+    {
+      "item": "USER_TYPE",
+      "reason": "Code ou nom de colonne non rattaché",
+      "where": "02-technical-architecture.md:74"
+    },
+    {
+      "item": "LUSR_TYPE",
+      "reason": "Code ou nom de colonne non rattaché",
+      "where": "02-technical-architecture.md:126"
+    },
+    {
+      "item": "ServiceLocator",
+      "reason": "Nom CamelCase cité sans indice de classe (ni chemin, ni suffixe, ni colonne « Classe »)",
+      "where": "02-technical-architecture.md:143"
+    },
+    {
+      "item": "MailServer",
+      "reason": "Nom CamelCase cité sans indice de classe (ni chemin, ni suffixe, ni colonne « Classe »)",
+      "where": "02-technical-architecture.md:162"
+    },
+    {
+      "item": "xsd/schemas_pes_v5.6_v3/",
+      "reason": "Chemin relatif sans base déclarée dans ce document",
+      "where": "03-codebase-structure.md:59"
+    },
+    {
+      "item": "src/org/jbpm/pvm/internal/email/impl/",
+      "reason": "Chemin relatif sans base déclarée dans ce document",
+      "where": "03-codebase-structure.md:127"
+    },
+    {
+      "item": "src/org/omg/CORBA/portable/IDLEntity.java",
+      "reason": "Chemin relatif sans base déclarée dans ce document",
+      "where": "03-codebase-structure.md:128"
+    },
+    {
+      "item": "lia-redaction/src/main/java/org/odftoolkit/simple/",
+      "reason": "Chemin relatif sans base déclarée dans ce document",
+      "where": "03-codebase-structure.md:130"
+    },
+    {
+      "item": "lia-social/src/main/java/org/j3d/util/",
+      "reason": "Chemin relatif sans base déclarée dans ce document",
+      "where": "03-codebase-structure.md:131"
+    },
+    {
+      "item": "RESOURCE_LOCAL",
+      "reason": "Nom au format <MODULE>_<NOM> dont le préfixe n’est pas dans 05 §3.1, sans le mot « table »",
+      "where": "05-database-documentation.md:13"
+    },
+    {
+      "item": "LCMP_IDENTIFIANT",
+      "reason": "Nom au format <MODULE>_<NOM> dont le préfixe n’est pas dans 05 §3.1, sans le mot « table »",
+      "where": "05-database-documentation.md:16"
+    },
+    {
+      "item": "QueryParameter",
+      "reason": "Nom CamelCase cité sans indice de classe (ni chemin, ni suffixe, ni colonne « Classe »)",
+      "where": "05-database-documentation.md:30"
+    },
+    {
+      "item": "DataObjectsException",
+      "reason": "Nom CamelCase cité sans indice de classe (ni chemin, ni suffixe, ni colonne « Classe »)",
+      "where": "05-database-documentation.md:31"
+    },
+    {
+      "item": "READ_UNCOMMITTED",
+      "reason": "Code ou nom de colonne non rattaché",
+      "where": "05-database-documentation.md:64"
+    },
+    {
+      "item": "StartupCheck",
+      "reason": "Nom CamelCase cité sans indice de classe (ni chemin, ni suffixe, ni colonne « Classe »)",
+      "where": "05-database-documentation.md:156"
+    },
+    {
+      "item": "vanilla/query/*.sql",
+      "reason": "Chemin relatif sans base déclarée dans ce document",
+      "where": "05-database-documentation.md:193"
+    },
+    {
+      "item": "READ_COMMITTED_SNAPSHOT",
+      "reason": "Nom au format <MODULE>_<NOM> dont le préfixe n’est pas dans 05 §3.1, sans le mot « table »",
+      "where": "05-database-documentation.md:216"
+    },
+    {
+      "item": "init/create-*.sql",
+      "reason": "Chemin relatif sans base déclarée dans ce document",
+      "where": "05-database-documentation.md:219"
+    },
+    {
+      "item": "InterfaceHistorique",
+      "reason": "Nom CamelCase cité sans indice de classe (ni chemin, ni suffixe, ni colonne « Classe »)",
+      "where": "06-api-and-integrations.md:13"
+    },
+    {
+      "item": "ged/connector/*Operation",
+      "reason": "Chemin relatif sans base déclarée dans ce document",
+      "where": "06-api-and-integrations.md:107"
+    },
+    {
+      "item": "UpgradeStandardPlanGed",
+      "reason": "Nom CamelCase cité sans indice de classe (ni chemin, ni suffixe, ni colonne « Classe »)",
+      "where": "06-api-and-integrations.md:115"
+    },
+    {
+      "item": "users/forgot-password",
+      "reason": "Chemin relatif sans base déclarée dans ce document",
+      "where": "06-api-and-integrations.md:159"
+    },
+    {
+      "item": "APP_MAILSERVER",
+      "reason": "Code ou nom de colonne non rattaché",
+      "where": "06-api-and-integrations.md:175"
+    },
+    {
+      "item": "jbpm/*.bar",
+      "reason": "Chemin relatif sans base déclarée dans ce document",
+      "where": "06-api-and-integrations.md:195"
+    },
+    {
+      "item": "jbpm-deploy/*.bar",
+      "reason": "Chemin relatif sans base déclarée dans ce document",
+      "where": "06-api-and-integrations.md:195"
+    },
+    {
+      "item": "FPRJ_STAGENAME",
+      "reason": "Code ou nom de colonne non rattaché",
+      "where": "07-business-workflows.md:20"
+    },
+    {
+      "item": "FPRJ_STATUS",
+      "reason": "Code ou nom de colonne non rattaché",
+      "where": "07-business-workflows.md:35"
+    },
+    {
+      "item": "PRCS_*",
+      "reason": "Nom au format <MODULE>_<NOM> dont le préfixe n’est pas dans 05 §3.1, sans le mot « table »",
+      "where": "07-business-workflows.md:156"
+    },
+    {
+      "item": "JAVA_HOME",
+      "reason": "Code ou nom de colonne non rattaché",
+      "where": "08-development-setup.md:10"
+    },
+    {
+      "item": "lia-core/src/test",
+      "reason": "Chemin relatif sans base déclarée dans ce document",
+      "where": "08-development-setup.md:58"
+    },
+    {
+      "item": "target/liaweb-*/WEB-INF/lib/*",
+      "reason": "Chemin relatif sans base déclarée dans ce document",
+      "where": "08-development-setup.md:66"
+    },
+    {
+      "item": "ProductVersion",
+      "reason": "Nom CamelCase cité sans indice de classe (ni chemin, ni suffixe, ni colonne « Classe »)",
+      "where": "08-development-setup.md:115"
+    },
+    {
+      "item": "SetupExtension",
+      "reason": "Nom CamelCase cité sans indice de classe (ni chemin, ni suffixe, ni colonne « Classe »)",
+      "where": "09-testing-and-quality.md:14"
+    },
+    {
+      "item": "InterfaceLDAP",
+      "reason": "Nom CamelCase cité sans indice de classe (ni chemin, ni suffixe, ni colonne « Classe »)",
+      "where": "10-known-issues-and-technical-debt.md:137"
+    },
+    {
+      "item": "FeatureAddOnFunction",
+      "reason": "Nom CamelCase cité sans indice de classe (ni chemin, ni suffixe, ni colonne « Classe »)",
+      "where": "10-known-issues-and-technical-debt.md:137"
+    },
+    {
+      "item": "src/xsd/schemas_pes_v5.6_v3",
+      "reason": "Chemin relatif sans base déclarée dans ce document",
+      "where": "10-known-issues-and-technical-debt.md:139"
+    },
+    {
+      "item": "InstanceMetier",
+      "reason": "Nom CamelCase cité sans indice de classe (ni chemin, ni suffixe, ni colonne « Classe »)",
+      "where": "11-glossary.md:27"
+    },
+    {
+      "item": "FPRJ_VERSIONCCAG",
+      "reason": "Code ou nom de colonne non rattaché",
+      "where": "11-glossary.md:59"
+    },
+    {
+      "item": "PrestataireRetenueGarantie",
+      "reason": "Nom CamelCase cité sans indice de classe (ni chemin, ni suffixe, ni colonne « Classe »)",
+      "where": "11-glossary.md:116"
+    },
+    {
+      "item": "CoefVariation",
+      "reason": "Nom CamelCase cité sans indice de classe (ni chemin, ni suffixe, ni colonne « Classe »)",
+      "where": "11-glossary.md:122"
+    },
+    {
+      "item": "ce_X/ce_X.xml",
+      "reason": "Chemin relatif sans base déclarée dans ce document",
+      "where": "12-frontend-and-ui-conventions.md:157"
+    },
+    {
+      "item": "DocGenerer",
+      "reason": "Nom CamelCase cité sans indice de classe (ni chemin, ni suffixe, ni colonne « Classe »)",
+      "where": "12-frontend-and-ui-conventions.md:166"
+    },
+    {
+      "item": "DC4 (hors mention dans les actes)",
+      "reason": "Terme recherché et absent du code (11 §7)",
+      "where": "11-glossary.md:157"
+    },
+    {
+      "item": "nantissement",
+      "reason": "Terme recherché et absent du code (11 §7)",
+      "where": "11-glossary.md:157"
+    },
+    {
+      "item": "exemplaire unique",
+      "reason": "Terme recherché et absent du code (11 §7)",
+      "where": "11-glossary.md:157"
+    },
+    {
+      "item": "Chorus",
+      "reason": "Terme recherché et absent du code (11 §7)",
+      "where": "11-glossary.md:157"
+    },
+    {
+      "item": "intérêts moratoires",
+      "reason": "Terme recherché et absent du code (11 §7)",
+      "where": "11-glossary.md:157"
+    },
+    {
+      "item": "recensement économique (REAP)",
+      "reason": "Terme recherché et absent du code (11 §7)",
+      "where": "11-glossary.md:157"
+    }
+  ]
+}

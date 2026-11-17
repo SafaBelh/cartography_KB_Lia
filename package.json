@@ -1,0 +1,48 @@
+{
+  "name": "liaweb-cartography",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Code Cartography · LiaWeb — carte interactive et hors-ligne de l'application LiaWeb (Java / Wicket / JPA), construite depuis sa base de connaissances",
+  "type": "module",
+  "scripts": {
+    "extract": "tsx scripts/extract.ts",
+    "predev": "node scripts/ensure-data.mjs",
+    "dev": "vite --host 127.0.0.1 --port 5173",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --host 127.0.0.1 --port 4173",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "spot-check": "node scripts/spot-check.mjs 10",
+    "check": "tsc --noEmit && vitest run && node scripts/spot-check.mjs 100000 7"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.1.0",
+    "@fontsource/jetbrains-mono": "^5.1.0",
+    "cytoscape": "^3.30.2",
+    "cytoscape-dagre": "^2.5.0",
+    "cytoscape-fcose": "^2.2.0",
+    "cytoscape-svg": "^0.4.0",
+    "framer-motion": "^11.11.17",
+    "fuse.js": "^7.0.0",
+    "html-to-image": "^1.11.11",
+    "lucide-react": "^0.460.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-markdown": "^9.0.1",
+    "react-router-dom": "^6.28.0",
+    "remark-gfm": "^4.0.0",
+    "unist-util-visit": "^5.0.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.0.0",
+    "@types/node": "^22.9.0",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "tailwindcss": "^4.0.0",
+    "tsx": "^4.19.2",
+    "typescript": "~5.6.3",
+    "vite": "^6.0.0",
+    "vitest": "^2.1.5"
+  }
+}
